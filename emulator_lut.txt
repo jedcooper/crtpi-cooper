@@ -1,0 +1,23 @@
+# LUT File for generating PAL configuration in runcommand-onstart.sh
+# written by jedcooper in February '21
+# 
+# Format:
+# row: emulator,configdir,key emulator,emulator value,key viewport,viewport value
+#
+# column:
+# 1 emulator
+# 2 configdir
+# 3 key emulator
+# 4 emulator value
+# 5 key viewport (for Game overrides)
+# 6 viewport value
+#
+# the last , is needed for the parser, otherwise it returns LF or CR/LF which would corrupt the output - just for info
+#
+lr-picodrive,/opt/retropie/configs/all/retroarch/config/PicoDrive,picodrive_region,Europe,custom_viewport_height,,
+lr-genesis-plus-gx,/opt/retropie/configs/all/retroarch/config/Genesis Plus GX,genesis_plus_gx_region_detect,pal,custom_viewport_height,240,
+lr-snes9x2010,/opt/retropie/configs/all/retroarch/config/Snes9x 2010,,,, 												#automatic detection
+lr-fceumm,/opt/retropie/configs/all/retroarch/config/FCEUmm,fceumm_region,PAL,
+lr-stella,/opt/retropie/configs/all/retroarch/config/Stella 2014,,,, 													#no core options available
+lr-pcsx-rearmed,/opt/retropie/configs/all/retroarch/config/PCSX-ReARMed,pcsx_rearmed_region,PAL,
+lr-yabause,/opt/retropie/configs/all/retroarch/config/Yabause,,,, 														#no region options
