@@ -16,8 +16,9 @@
 #
 lr-picodrive,/opt/retropie/configs/all/retroarch/config/PicoDrive,picodrive_region,Europe,custom_viewport_height,,
 lr-genesis-plus-gx,/opt/retropie/configs/all/retroarch/config/Genesis Plus GX,genesis_plus_gx_region_detect,pal,custom_viewport_height,240,
-lr-snes9x2010,/opt/retropie/configs/all/retroarch/config/Snes9x 2010,,,, 												#automatic detection
+lr-snes9x2010,/opt/retropie/configs/all/retroarch/config/Snes9x 2010,,,,
 lr-fceumm,/opt/retropie/configs/all/retroarch/config/FCEUmm,fceumm_region,PAL,
-lr-stella2014,/opt/retropie/configs/all/retroarch/config/Stella 2014,,,custom_viewport_height,250, 													#no core options available
+lr-stella2014,/opt/retropie/configs/all/retroarch/config/Stella 2014,,,custom_viewport_height,250,
 lr-pcsx-rearmed,/opt/retropie/configs/all/retroarch/config/PCSX-ReARMed,pcsx_rearmed_region,PAL,
-lr-yabause,/opt/retropie/configs/all/retroarch/config/Yabause,,,, 														#no region options
+lr-yabause,/opt/retropie/configs/all/retroarch/config/Yabause,,,,
+lr-prosystem,/opt/retropie/configs/all/retroarch/config/ProSystem,,,custom_viewport_height,272,
