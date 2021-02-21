@@ -188,7 +188,7 @@ if [ -f "/opt/retropie/configs/$1/PAL.txt" ]; then
 		# f.e. 224 -> 240, IF the LUT contains the info :-)
 		# AND if the game uses 240 lines actually!
 		#
-		# check if 240p needed
+		# check if 240p needed - maybe rename to PALLines.txt, as there can be different lines in some cores
 		if [ -f "/opt/retropie/configs/$1/240p.txt" ]; then
 			x240pGame=$(tr -d "\r" < "/opt/retropie/configs/$1/240p.txt" | sed -e 's/\[/\\\[/');
 			curtime=$(cat /proc/uptime | cut -f1 -d " ")
@@ -639,7 +639,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
 		[[ "$system" == "atari5200" ]] || 
 		[[ "$system" == "dreamcast" ]] || 
 		[[ "$system" == "saturn" ]] || 
-		[[ "$system" == "atari7800" ]] || 
+		#[[ "$system" == "atari7800" ]] || 
 		[[ "$system" == "n64" ]] || 
 		[[ "$system" == "arcade" ]] || 
 		[[ "$system" == "mame-libretro" ]] || 
@@ -662,6 +662,16 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
 			curtime=$(cat /proc/uptime | cut -f1 -d " ")
 			echo "${curtime}: PAL 1600x240 (320x240) applied (C64 libretro)" >> $logfile
 
+# change timings for Atari 7800 PAL to 1920x288 50 Hz - jedcooper
+	elif
+		[[ "$system" == "atari7800" ]] ; then
+			vcgencmd hdmi_cvt 1920 288 100 1 0 0 0 > /dev/null
+			tvservice -e "DMT 87" > /dev/null
+			sleep 1 > /dev/null
+			fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 288 > /dev/null #24b depth
+			curtime=$(cat /proc/uptime | cut -f1 -d " ")
+			echo "${curtime}: PAL 1920x288 (320x288) applied (Atari 7800 PAL)" >> $logfile
+		
 # change timings for for Kodi to 1280x720p (720p50)
 	elif
 		[[ "$system" == "kodi" ]] ||
