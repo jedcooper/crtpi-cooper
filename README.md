@@ -13,3 +13,5 @@ Hardware setup:
 * My CRT is a kinda cheap Peacock "noname" 17" with not even an OSD. It cranks up to 120 Hz flawlessly, at 140 Hz it bails out (of sync). Unfortunately it doesn't even have much modes saved, so I have to adjust the picture quite often between some screenmodes.
 * I'm using a RPi3B+ with heatsinks and a small 25mm fan case with a GPIO extender and Gert's VGA666 adapter.
 * Gamepads tested (and working): Xbox 360 wireless (USB Receiver), PS3 Bluetooth (built-in)
+
+I'm also a complete NEWBIE at github and currently uploading the stuff manually (no git commandline or application yet).
