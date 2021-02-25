@@ -14,7 +14,7 @@
 #
 # the last , is needed for the parser, otherwise it returns LF or CR/LF which would corrupt the output - just for info
 #
-lr-picodrive,/opt/retropie/configs/all/retroarch/config/PicoDrive,picodrive_region,Europe,custom_viewport_height,,
+lr-picodrive,/opt/retropie/configs/all/retroarch/config/PicoDrive,picodrive_region,Europe,custom_viewport_height,240,
 lr-genesis-plus-gx,/opt/retropie/configs/all/retroarch/config/Genesis Plus GX,genesis_plus_gx_region_detect,pal,custom_viewport_height,240,
 lr-snes9x2010,/opt/retropie/configs/all/retroarch/config/Snes9x 2010,,,,
 lr-fceumm,/opt/retropie/configs/all/retroarch/config/FCEUmm,fceumm_region,PAL,
