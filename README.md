@@ -1,4 +1,7 @@
 # crtpi-cooper
+<p align="center">
+  <img src="https://github.com/jedcooper/crtpi-cooper/blob/main/CRTPi-cooper.png">
+</p>
 PAL additions/changes to ErantyInt's CRTPi-VGA project. See his project here: https://github.com/crtpi/CRTPi-VGA
 
 **DISCLAIMER - It's still WIP, so use at own risk (backup your files before).**
