@@ -1,4 +1,3 @@
-# crtpi-cooper
 <p align="center">
   <img src="https://github.com/jedcooper/crtpi-cooper/blob/main/CRTPi-cooper.png">
 </p>
