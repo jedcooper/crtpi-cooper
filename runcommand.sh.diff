@@ -1,0 +1,5 @@
+$ diff runcommand.sh runcommand.sh.bak
+1197c1197
+<             fbi -1 -t "$IMAGE_DELAY" -noverbose -a "$image" </dev/tty &>/dev/null & disown
+---
+>             fbi -1 -t "$IMAGE_DELAY" -noverbose -a "$image" </dev/tty &>/dev/null
