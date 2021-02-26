@@ -378,8 +378,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
 		[[ "$system" == "megadrive" ]] || 
 		[[ "$system" == "segacd" ]] || 
 		[[ "$system" == "sega32x" ]] || 
-		[[ "$system" == "fba" ]] || 
-		[[ "$system" == "neogeo" ]] ; then
+		[[ "$system" == "fba" ]] ; then
 			vcgencmd hdmi_timings 1920 1 137 247 295 224 1 11 7 20 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x224p Timing Adjusted
 			tvservice -e "DMT 87" > /dev/null
 			sleep 1 > /dev/null
@@ -387,6 +386,17 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
 			curtime=$(cat /proc/uptime | cut -f1 -d " ")
 			echo "${curtime}: NTSC 1920x224 (320x224 & 384x224) applied" >> $logfile
 
+# change timings for Neo Geo 384x264 1920x288p - jedcooper
+	elif
+		[[ "$system" == "neogeo" ]] ; then
+			#vcgencmd hdmi_timings 1920 0 72 192 264 288 1 3 10 11 0 0 0 118 0 90410000 1 > /dev/null #CRTPi-cooper 1920x288p @59.1856 Hz x2 Timing
+			vcgencmd hdmi_timings 1920 0 48 192 240 240 1 3 10 7 0 0 0 118 0 73870000 1 > /dev/null #CRTPi-cooper 1920x240p @59.1856 Hz x2 Timing
+			tvservice -e "DMT 87" > /dev/null
+			sleep 1 > /dev/null
+			fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 240 > /dev/null #24b depth
+			curtime=$(cat /proc/uptime | cut -f1 -d " ")
+			echo "${curtime}: Neo Geo NTSC 1920x240 (384x264) applied" >> $logfile			
+			
 # change timings for 320x200 systems to 1920x200p
 	elif 
 		[[ "$system" == "quake" ]] || 
