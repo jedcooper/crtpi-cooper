@@ -32,6 +32,10 @@ IS240p=false
 # Emulator LUT
 emulatorLUT="/opt/retropie/configs/all/emulator_lut.txt"
 
+# Arcade Timings generator script
+gettimingscmd="/opt/retropie/configs/all/generate_hdmi_timings_arcade.sh"
+timingsfile="/tmp/hdmi_timings.txt"
+
 #### Michael Vencio ####
 
 # get the system name
@@ -240,11 +244,26 @@ fi > /dev/null
 
 #### Michael Vencio ####
 
+#
+# ok what do we have here:
+# - resolution <xres> x <yres>
+# - orientation vertical
+#
+# we need:
+# - refresh rate
+# - regarding this maybe there's a CLI tool to get the x/y-res also
+# - resolution regions matching nearest defaults (1920x240, 2048x240, 1600x288 etc.)
+# - 31 kHz native timings for 400p+ games (no scanlines)
+# - LOTS! of custom hdmi_timings - a CLI calculator (like CRU) would be neat
+#
+# with now having generate_hdmi_timings.sh I'm not sure if the following isn't obsolete...
+#
+
 # Determine if arcade or fba then determine resolution, set hdmi_timings else goto console section
 if [[ "$system" == "arcade" ]] || [[ "$system" == "fba" ]] || [[ "$system" == "mame-libretro" ]] || [[ "$system" == "neogeo" ]] ; then
 	# get the line number matching the rom
 	rom_ln=$(tac /opt/retropie/configs/all/resolution.ini | grep -w -n $rom_bn | cut -f1 -d":")
-	
+	echo "INFO: Arcade conditional started..." >> $logfile
 	# get resolution of rom
 	rom_resolution=$(tac /opt/retropie/configs/all/resolution.ini | sed -n "$rom_ln,$ p" | grep -m 1 -F '[') 
 	rom_resolution=${rom_resolution#"["}
@@ -256,18 +275,22 @@ if [[ "$system" == "arcade" ]] || [[ "$system" == "fba" ]] || [[ "$system" == "m
 # Set rom_resolution_height for 480p and 448p roms
 	if [ $rom_resolution_height == "480" ]; then
 		rom_resolution_height="240"
+            echo "INFO: Set ROM height 480 -> 240." >> $logfile
 	elif [ $rom_resolution_height == "448" ]; then
 		rom_resolution_height="224"
+            echo "INFO: Set ROM height 448 -> 224." >> $logfile 
 	fi	
 	
 # Create rom_name.cfg
 	if ! [ -f "$rom_fp"".cfg" ]; then 
 		touch "$rom_fp"".cfg" 
+            echo "INFO: ROM ${rom_fp}.cfg created." >> $logfile
 	fi
 	
 # Set custom_viewport_height
 	if ! grep -q "custom_viewport_height" "$rom_fp"".cfg"; then
 		echo -e "custom_viewport_height = ""\"$rom_resolution_height\"" >> "$rom_fp"".cfg" 2>&1
+            echo "INFO: Custom viewport height ${rom_resolution_height} set in .cfg file." >> $logfile
 	fi
 	
 # determine if vertical  
@@ -275,23 +298,28 @@ if [[ "$system" == "arcade" ]] || [[ "$system" == "fba" ]] || [[ "$system" == "m
 		# Add vertical parameters (video_allow_rotate = "true")
 		if ! grep -q "video_allow_rotate" "$rom_fp"".cfg"; then
 			echo -e "video_allow_rotate = \"true\"" >> "$rom_fp"".cfg" 2>&1
+                 echo "INFO: (Vertical) Allow Rotation added." >> $logfile
 		fi
 		
 		# Add vertical parameters (video_rotation = 3)
 		if ! grep -q "video_rotation" "$rom_fp"".cfg"; then
 			echo -e "video_rotation = \"3\"" >> "$rom_fp"".cfg" 2>&1
+                 echo "INFO: (Vertical) Rotation added." >> $logfile
 		fi	
 		
 		# Add integer scale parameters (video_scale_integer = true)
 		if ! grep -q "video_scale_integer" "$rom_fp"".cfg"; then
 			echo -e "video_scale_integer = \"true\"" >> "$rom_fp"".cfg" 2>&1
+                 echo "INFO: (Vertical) Integer scale added." >> $logfile
 		fi
 	fi
 
 # set the custom_viewport_width 
 	if ! grep -q "custom_viewport_width" "$rom_fp"".cfg"; then 
 		echo -e "custom_viewport_width = ""\"1920\"" >> "$rom_fp"".cfg"  2>&1
+           echo "INFO: Custom viewport width set to 1920." >> $logfile
 	fi
+    echo "INFO: End of Arcade conditionals." >> $logfile
 fi
 
 #### Michael Vencio X CRTPi X Sakitoshi ####
@@ -299,7 +327,7 @@ fi
 # determine and set variable resolutions for libretto cores
 
 ##############################################################################
-#### NTSC section                                                         ####
+#### NTSC & Arcade section                                                ####
 ##############################################################################
 
 if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
@@ -429,9 +457,9 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
 		[[ "$system" == "dreamcast" ]] || 
 		[[ "$system" == "saturn" ]] || 
 		[[ "$system" == "atari7800" ]] || 
+            [[ "$system" == "arcade" ]] || 
+		[[ "$system" == "mame-libretro" ]] ||
 		[[ "$system" == "n64" ]] || 
-		[[ "$system" == "arcade" ]] || 
-		[[ "$system" == "mame-libretro" ]] || 
 		[[ "$system" == "cavestory" ]] ; then 
 			vcgencmd hdmi_timings 1920 1 137 247 295 240 1 3 7 12 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x240p Timing Adjusted
 			tvservice -e "DMT 87" > /dev/null
@@ -449,6 +477,43 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
 			fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 240 > /dev/null #24b depth
 			curtime=$(cat /proc/uptime | cut -f1 -d " ")
 			echo "${curtime}: NTSC 1600x240 (320x240) applied (C64 LR TESTING)" >> $logfile
+
+# change timings for ARCADE to variable timings with generate_hdmi_timings_arcade.sh!
+#
+# THIS WILL NOT WORK IF YOU DON'T HAVE THE SCRIPT 'generate_hdmi_timings_arcade.sh'
+#
+# audio crackling... the emulators DON'T run at refresh rate sync, but seem to be
+# hardcoded to 59.94 Hz ...
+# DAMNIT
+#
+    # elif 
+		# [[ "$system" == "arcade" ]] || 
+		# [[ "$system" == "mame-libretro" ]] ; then
+                # curtime=$(cat /proc/uptime | cut -f1 -d " ")
+                # echo "${curtime}: *** ARCADE / mame-libretro section ***" >> $logfile
+                # arcaderom=$(basename $3)
+                # echo "${curtime}: ROM name: ${arcaderom}" >> $logfile
+                # # call script for ROM name, quiet
+                # ${gettimingscmd} ${arcaderom} quiet
+                # curtime=$(cat /proc/uptime | cut -f1 -d " ")
+                # if [[ ! -f ${timingsfile} ]] ; then
+                    # echo "${curtime}: HDMI Timings file NOT created. Fallback used." >> $logfile
+                    # HDMI_TIMINGS="1600 1 95 157 182 240 1 4 3 15 0 0 0 120 0 64000000‬ 1"
+                # else
+                    # HDMI_TIMINGS=$(cat ${timingsfile})
+                    # echo "${curtime}: HDMI Timings file created. Timings are: ${HDMI_TIMINGS}" >> $logfile
+                # fi
+                # xres=$(cut -f1 -d " " <<< $HDMI_TIMINGS)
+                # yres=$(cut -f6 -d " " <<< $HDMI_TIMINGS)
+                # refreshrate=$(cut -f14 -d " " <<< $HDMI_TIMINGS)
+                # vcgencmd hdmi_timings ${HDMI_TIMINGS} > /dev/null
+                # tvservice -e "DMT 87" > /dev/null
+                # sleep 1 > /dev/null
+                # curtime=$(cat /proc/uptime | cut -f1 -d " ")
+                # echo "${curtime}: Resolution ${xres}x${yres} set. Refresh rate: ${refreshrate}Hz." >> $logfile
+                # fbset -depth 8 && fbset -depth 16 -xres ${xres} -yres ${yres} > /dev/null #VGA666 16b depth
+                # curtime=$(cat /proc/uptime | cut -f1 -d " ")
+                # echo "${curtime}: *** END OF ARCADE ***" >> $logfile
 
 # change timings for for Kodi to 1280x720p
 	elif

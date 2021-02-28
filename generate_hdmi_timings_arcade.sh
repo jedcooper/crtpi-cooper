@@ -1,28 +1,41 @@
 #!/bin/bash
 #
-# v0.10
+# v0.11
 #
 # ToDo:
 # - select resolutions near the usual resolutions from array (validHRES, validYRES)
 # - return values for to be called from another script e.g. runcommand-onstart.sh
 # - 31 kHz ROMs (Tapper, Popeye, etc.)
 # - traps, excepts etc.
+# - support different MAME binaries for some version discrepancy esp. ROM naming :-(
 #
-version=0.10
+version=0.11
+timingslogfile=/tmp/$(basename $0).log
+rm -f ${timingslogfile}
+
+# be quiet if called from script (f.e. runcommand-onstart.sh)
+if [[ $2 == "quiet" ]] ; then
+    exec 1> ${timingslogfile}
+fi
 
 # some information
-echo -e "Usage: $0 <romname|romname.zip>"
+echo -e "Usage: $0 <romname|romname.zip> <quiet>"
 echo -e "\nGenerate HDMI Timings for Arcade systems\n========================================\n\nVersion: ${version} - jedcooper\n\nThis script needs the 'mame' and 'bc' package to work. Install via 'sudo apt install mame bc'.\nI also use the open source VESA GTF calculation program,\nget source code here: https://sourceforge.net/projects/gtf/ \nIt compiles fine on RPi 3B+ RetroPie Buster with 'gcc gtf.c -o gtf -lm -Wall'.\nPut it in the same folder as this generation script or change location in this script.\n"
 
 # some variables ^^
 romname=$1
 if [[ $romname == "" ]] ; then
     echo -e "No ROM name given! Bailing out..."
-    exit
+    exit 1
 fi
 rom=${romname%.*}
 gtfpath=/opt/retropie/configs/all
 gtfexec=${gtfpath}/gtf
+# maybe change timingsfile to some sort of like 
+# $rom.timings (gauntlet.timings) in ROM directory? or config directory?
+#
+timingsfile=/tmp/hdmi_timings.txt
+rm -f ${timingsfile} 
 
 # SuperResolution ranges
 # Horizontal resolution range min/max
@@ -30,10 +43,9 @@ gtfexec=${gtfpath}/gtf
 # common Y res are: 192, 200, 224, 240, 256, 288
 #
 rangeXMIN=1600
-rangeXMAX=2048
+rangeXMAX=1920
 # array of valid H res for scanline SuperResolutions
 validHRES=(1600 1680 1920 2048)
-
 # Vertical resolution range min/max
 rangeYMIN=192
 rangeYMAX=288
@@ -44,7 +56,7 @@ echo "Generating XML file for ${rom}..."
 mame ${rom} -listxml > /tmp/${rom}.xml
 if [ ! -f /tmp/${rom}.xml ] || [ ! -s /tmp/${rom}.xml ]  ; then
     echo -e "\nERROR! Invalid ROM name or ROM not found in MAME DB. Exiting...\n"
-    exit
+    exit 1
 fi
 echo "Done."
 
@@ -89,7 +101,7 @@ intfactorY=$(bc <<< ${rangeYMAX}/${height})
 emuresY=$(bc <<< ${intfactorY}*${height})
 if [[ ${intfactorY} -lt 1 ]] ; then
     echo -e "\nERR: Emulator resolution would have to be greater than defined maximum Y-Range!\nERR: This is on my ToDo list and yet to come in the future...\n\nExiting...\n"
-    exit
+    exit 1
 fi
 echo -e "Integer Factor Y:      ${intfactorY}"
 echo -e "Emulator Res Y:        ${emuresY}"
@@ -113,7 +125,7 @@ fi
 # choose screen resolution X
 # same as above, more intelligent mode with arrays needed
 #
-screenresX=2048
+screenresX=${rangeXMAX}
 
 # Refresh rate for SuperResolution
 screenrefresh=$(bc <<< $refreshrate*2)
@@ -192,4 +204,12 @@ echo -e "aspect_ratio =     ${aspect_ratio}"
 
 echo -e "\nFinal hdmi_timings command line:\nvcgencmd hdmi_timings ${h_active_pixels} ${h_sync_polarity} ${h_front_porch} ${h_sync_pulse} ${h_back_porch} ${v_active_lines} ${v_sync_polarity} ${v_front_porch} ${v_sync_pulse} ${v_back_porch} ${v_sync_offset_a} ${v_sync_offset_b} ${pixel_rep} ${frame_rate} ${interlaced} ${pixel_freq} ${aspect_ratio}"
 
+echo -e "\nWriting timings to ${timingsfile}"
+
+touch ${timingsfile}
+
+echo "${h_active_pixels} ${h_sync_polarity} ${h_front_porch} ${h_sync_pulse} ${h_back_porch} ${v_active_lines} ${v_sync_polarity} ${v_front_porch} ${v_sync_pulse} ${v_back_porch} ${v_sync_offset_a} ${v_sync_offset_b} ${pixel_rep} ${frame_rate} ${interlaced} ${pixel_freq} ${aspect_ratio}" > ${timingsfile}
+
 echo -e "\nALL Done."
+
+exit 0
