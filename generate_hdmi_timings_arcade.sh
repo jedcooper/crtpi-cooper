@@ -1,16 +1,24 @@
 #!/bin/bash
 #
-# v0.04
+# v0.07
 #
 # ToDo:
-# - select resolutions near the usual resolutions from array
+# - select resolutions near the usual resolutions from array (validHRES, validYRES)
 # - return values for to be called from another script e.g. runcommand-onstart.sh
-# - romfile variable
+# - 31 kHz ROMs (Tapper, Popeye, etc.)
 #
+version=0.07
+
+# some information
+echo -e "Usage: $0 <romname|romname.zip>"
+echo -e "\nGenerate HDMI Timings for Arcade systems\n========================================\n\nVersion: ${version} - jedcooper\n\nThis script needs the 'mame' and 'bc' package to work. Install via 'sudo apt install mame bc'.\nI also use the open source VESA GTF calculation program,\nget source code here: https://sourceforge.net/projects/gtf/ \nIt compiles fine on RPi 3B+ RetroPie Buster with 'gcc gtf.c -o gtf -lm -Wall'.\nPut it in the same folder as this generation script or change location in this script.\n"
 
 # some variables ^^
-version=0.04
-romname=gauntlet.zip
+romname=$1
+if [[ $romname == "" ]] ; then
+    echo -e "No ROM name given! Bailing out..."
+    exit
+fi
 rom=${romname%.*}
 gtfpath=/opt/retropie/configs/all
 gtfexec=${gtfpath}/gtf
@@ -30,8 +38,6 @@ rangeYMIN=192
 rangeYMAX=288
 validYRES=(192 200 224 240 256 288)
 
-echo -e "\nGenerate HDMI Timings for Arcade systems\n===========================================\n\nVersion: ${version} - jedcooper\n\nThis script needs the 'bc' package to work. Install via 'sudo apt install bc'.\n"
-
 # generate XML file from ROM
 mame ${rom} -listxml > /tmp/${rom}.xml
 echo -n "Generating XML file for ${rom}..."
@@ -42,10 +48,12 @@ echo -e "ROM filename:      ${romname}"
 echo -e "ROM name:          ${rom}"
 
 # get the values from the .xml file
+romclearname=$(xmlstarlet sel -t -v 'mame/machine/description' /tmp/${rom}.xml | head -n 1)
 refreshrate=$(xmlstarlet sel -t -v '/mame/machine/display/@refresh' /tmp/${rom}.xml)
 width=$(xmlstarlet sel -t -v '/mame/machine/display/@width' /tmp/${rom}.xml)
 height=$(xmlstarlet sel -t -v '/mame/machine/display/@height' /tmp/${rom}.xml)
 
+echo -e "ROM clear name:    ${romclearname}"
 echo -e "ROM width:         ${width}"
 echo -e "ROM height:        ${height}"
 echo -e "ROM refresh:       ${refreshrate}"
@@ -66,7 +74,8 @@ echo -e "Emulator Res X:        ${emuresX}"
 intfactorY=$(bc <<< ${rangeYMAX}/${height})
 emuresY=$(bc <<< ${intfactorY}*${height})
 if [[ ${intfactorY} -lt 1 ]] ; then
-    echo -e "\nWARN: Emulator resolution would have to be greater than defined maximum Y-Range!\n"
+    echo -e "\nERR: Emulator resolution would have to be greater than defined maximum Y-Range!\nERR: This is on my ToDo list and yet to come in the future...\n\nExiting...\n"
+    exit
 fi
 echo -e "Integer Factor Y:      ${intfactorY}"
 echo -e "Emulator Res Y:        ${emuresY}"
