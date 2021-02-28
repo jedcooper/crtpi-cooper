@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# v0.07
+# v0.08
 #
 # ToDo:
 # - select resolutions near the usual resolutions from array (validHRES, validYRES)
 # - return values for to be called from another script e.g. runcommand-onstart.sh
 # - 31 kHz ROMs (Tapper, Popeye, etc.)
 #
-version=0.07
+version=0.08
 
 # some information
 echo -e "Usage: $0 <romname|romname.zip>"
@@ -39,9 +39,15 @@ rangeYMAX=288
 validYRES=(192 200 224 240 256 288)
 
 # generate XML file from ROM
-mame ${rom} -listxml > /tmp/${rom}.xml
 echo -n "Generating XML file for ${rom}..."
+mame ${rom} -listxml > /tmp/${rom}.xml
+if [ ! -f /tmp/${rom}.xml ] || [ ! -s /tmp/${rom}.xml ]  ; then
+    echo -e "ERROR! Invalid ROM name or ROM not found in MAME DB. Exiting...\n"
+    exit
+fi
 echo "done."
+
+
 
 echo -e "\n*** Overview ***\n"
 echo -e "ROM filename:      ${romname}"
@@ -58,7 +64,7 @@ echo -e "ROM width:         ${width}"
 echo -e "ROM height:        ${height}"
 echo -e "ROM refresh:       ${refreshrate}"
 
-rm /tmp/${rom}.xml
+#rm /tmp/${rom}.xml
 
 # simple calculations yet w/o intelligent range usage
 # as where would 2.016 Integer resolution be next to a valid H res
