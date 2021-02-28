@@ -1,13 +1,14 @@
 #!/bin/bash
 #
-# v0.08
+# v0.10
 #
 # ToDo:
 # - select resolutions near the usual resolutions from array (validHRES, validYRES)
 # - return values for to be called from another script e.g. runcommand-onstart.sh
 # - 31 kHz ROMs (Tapper, Popeye, etc.)
+# - traps, excepts etc.
 #
-version=0.08
+version=0.10
 
 # some information
 echo -e "Usage: $0 <romname|romname.zip>"
@@ -39,16 +40,15 @@ rangeYMAX=288
 validYRES=(192 200 224 240 256 288)
 
 # generate XML file from ROM
-echo -n "Generating XML file for ${rom}..."
+echo "Generating XML file for ${rom}..."
 mame ${rom} -listxml > /tmp/${rom}.xml
 if [ ! -f /tmp/${rom}.xml ] || [ ! -s /tmp/${rom}.xml ]  ; then
-    echo -e "ERROR! Invalid ROM name or ROM not found in MAME DB. Exiting...\n"
+    echo -e "\nERROR! Invalid ROM name or ROM not found in MAME DB. Exiting...\n"
     exit
 fi
-echo "done."
+echo "Done."
 
-
-
+# main
 echo -e "\n*** Overview ***\n"
 echo -e "ROM filename:      ${romname}"
 echo -e "ROM name:          ${rom}"
@@ -58,19 +58,27 @@ romclearname=$(xmlstarlet sel -t -v 'mame/machine/description' /tmp/${rom}.xml |
 refreshrate=$(xmlstarlet sel -t -v '/mame/machine/display/@refresh' /tmp/${rom}.xml)
 width=$(xmlstarlet sel -t -v '/mame/machine/display/@width' /tmp/${rom}.xml)
 height=$(xmlstarlet sel -t -v '/mame/machine/display/@height' /tmp/${rom}.xml)
+rotation=$(xmlstarlet sel -t -v '/mame/machine/display/@rotate' /tmp/${rom}.xml)
+if [ $rotation = 0 ] || [ $rotation = 180 ] ; then
+    rottext=horizontal
+else
+    rottext=vertical
+    echo -e "\nWARN: Rotation is vertical: ${rotation}°! Yet not thoroughly tested in this program and others in CRTPi-cooper repo.\n"
+fi
 
 echo -e "ROM clear name:    ${romclearname}"
 echo -e "ROM width:         ${width}"
 echo -e "ROM height:        ${height}"
 echo -e "ROM refresh:       ${refreshrate}"
+echo -e "ROM rotation:      ${rottext} (${rotation}°)"
 
-#rm /tmp/${rom}.xml
+rm /tmp/${rom}.xml
 
 # simple calculations yet w/o intelligent range usage
 # as where would 2.016 Integer resolution be next to a valid H res
 # to 2.048 (ofc!) or 1.920 etc.?
 
-echo -e "\n*** Emulator resolution values ***\n"
+echo -e "\n*** Emulator and screenmode resolution values ***\n"
 
 intfactorX=$(bc <<< ${rangeXMAX}/${width})
 emuresX=$(bc <<< ${intfactorX}*${width})
@@ -109,7 +117,6 @@ screenresX=2048
 
 # Refresh rate for SuperResolution
 screenrefresh=$(bc <<< $refreshrate*2)
-echo -e "\n*** Chosen screenmode ***\n"
 echo -e "Screen Resolution X:   ${screenresX}"
 echo -e "Screen Resolution Y:   ${screenresY}"
 echo -e "Screen Refresh Rate:   ${screenrefresh}"
@@ -178,7 +185,7 @@ echo -e "v_back_porch =     ${v_back_porch}"
 echo -e "v_sync_offset_a =  ${v_sync_offset_a}"
 echo -e "v_sync_offset_b =  ${v_sync_offset_b}"
 echo -e "pixel_rep =        ${pixel_rep}"
-echo -e "frame_rate =       ${frame_rate}           rounded scr: ${frame_rate_rnd}  scale2 scr: ${frame_rate_s2}    calculated: ${frame_rate_calc}"
+echo -e "frame_rate =       ${frame_rate}           rounded scr: ${frame_rate_rnd}  xxx.xx scr: ${frame_rate_s2}    calculated: ${frame_rate_calc}"
 echo -e "interlaced =       ${interlaced}"
 echo -e "pixel_freq =       ${pixel_freq}"
 echo -e "aspect_ratio =     ${aspect_ratio}"
