@@ -10,4 +10,7 @@ sleep 1 > /dev/null
 fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1280 -yres 960 > /dev/null #24b Depth
 tvservice -s > /dev/null
 
+# RetroStats
+echo $(date -u +%Y-%m-%dT%H:%M:%S%z)'|'end'|'$1'|'$2'|'$3'|'$4 >> ~/RetroPie/game_stats.log
+
 ###
