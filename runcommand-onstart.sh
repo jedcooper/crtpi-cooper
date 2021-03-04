@@ -500,7 +500,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
                 echo "${curtime}: *** ARCADE / mame-libretro section ***" >> $logfile
                 arcaderom=$(basename $3)
                 echo "${curtime}: ROM name: ${arcaderom}" >> $logfile
-                # call script for ROM name, quiet
+                # call script for ROM name, quiet and create a <rom>.cfg file
                 ${gettimingscmd} ${arcaderom} quiet cfg
                 curtime=$(cat /proc/uptime | cut -f1 -d " ")
                 if [[ ! -f ${timingsfile} ]] ; then

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# v0.23
+# v0.26
 #
 # ToDo:
 # - traps, excepts etc.
@@ -9,6 +9,8 @@
 # - make option for GTF or CVT timings
 # - cache XML and timings 
 # - modelinecmd and cut must get another approach
+# - some 2048 modes are a bit too wide, but maybe it's my CRT setup? some intelligent aspect ratio management could be nice
+# - +1 Hz in NormalResolution? Paperboy f.e.
 #
 # Done (in testing):
 # - select resolutions near the usual resolutions from array (validHRES, validYRES)
@@ -26,7 +28,7 @@
 #
 # now we start...
 #
-version=0.23
+version=0.26
 timingslogfile=/tmp/$(basename $0).log
 rm -f ${timingslogfile}
 
@@ -111,13 +113,14 @@ refresh_N_MAX=75
 # generate XML file from mame2003-plus.xml
 #
 echo "Generating XML file for ${rom} ($(basename ${mame2003plusXML}))..."
-if [ -f ${romXML} ] && [ $REFRESHXML = false ] ; then
+if [ -f ${romXML} ] && [ -s ${romXML} ] && [ $REFRESHXML = false ] ; then
     echo "Game ROM XML already exists. Using ${romXML}."
 else
     echo -n "Game ROM XML not exists or needs updating. Creating/Refreshing."
     xmlstarlet sel -t -c "//game[@name=\"${rom}\"]" "${mame2003plusXML}" > ${romXML}
-    if [ ! -f ${romXML} ] || [ ! -s ${romXML} ]  ; then
+    if [ ! -f ${romXML} ] || [ $(stat -c '%s' ${romXML}) -lt 100 ] ; then
         echo -e "\nERROR! Invalid ROM name or ROM not found in MAME DB. Exiting...\n"
+        rm -f ${romXML}
         exit 1
     fi
     echo "Done."
@@ -167,8 +170,14 @@ if [ $height -le $rangeYMAX ] ; then
     echo "SuperResolution mode."
     arrayHRES=${validHRES[*]}
     arrayYRES=${validYRES[*]}
+    # Juno First and others 30 FPS fix
+    if [ ${refreshrate%.*} -lt 50 ] ; then
+        screenrefresh=$(bc <<< ${refreshrate}*2)
+    else
+        screenrefresh=${refreshrate}
+    fi
     # Refresh rate for SuperResolution
-    screenrefresh=$(bc <<< ${refreshrate}*2)
+    screenrefresh=$(bc <<< ${screenrefresh}*2)
     # +1.5 for CVT because RetroArch measurement states refresh rate is too low?!?!?
     auxSR=$(bc <<< "scale=0; ($screenrefresh+1.5)/1")
     screenrefresh=$auxSR
@@ -270,7 +279,8 @@ fi
 echo -e "\n*** vcgencmd hdmi_timings ***"
 
 modelinecmd="${gtfexec} ${screenresX} ${screenresY} ${screenrefresh} -v"
-#$modelinecmd
+mlfile=/tmp/gtf.timings
+$modelinecmd > $mlfile
 
 echo -e -n "\nGenerating modeline..."
 
@@ -292,34 +302,34 @@ echo -e -n "\nGenerating modeline..."
 h_active_pixels=${screenresX}
 echo -n "."
 
-if [[ $(${modelinecmd} | grep "Modeline" | cut -f18 -d " ") = "+HSync" ]] ; then
+if [[ $(awk '$1 == "Modeline" { print $12 }' $mlfile) = "+HSync" ]] ; then
     h_sync_polarity=1
 else 
     h_sync_polarity=0
 fi
 echo -n "."
-h_front_porch=$(${modelinecmd} | grep "H FRONT PORCH" | cut -f15 -d " " | cut -f1 -d ".")
+h_front_porch=$(awk '/H FRONT PORCH/ { print $7 }' $mlfile | cut -f1 -d ".")
 echo -n "."
-h_sync_pulse=$(${modelinecmd} | grep "H SYNC" | cut -f20 -d " " | cut -f1 -d ".")
+h_sync_pulse=$(awk '/H SYNC/ { print $6 }' $mlfile | cut -f1 -d ".")
 echo -n "."
 # aux. variable to calculate H Back Porch (not sure if correct tho!)
-h_blank=$(${modelinecmd} | grep "H BLANK" | cut -f19 -d " " | cut -f1 -d ".")
+h_blank=$(awk '/H BLANK/ { print $6 }' $mlfile | cut -f1 -d ".")
 echo -n "."
 h_back_porch=$(bc <<< $h_blank-$h_sync_pulse-$h_front_porch)
 echo -n "."
 v_active_lines=${screenresY}
 echo -n "."
-if [[ $(${modelinecmd} | grep "Modeline" | cut -f19 -d " ") = "+Vsync" ]] ; then
+if [[ $(awk '$1 == "Modeline" { print $13 }' $mlfile) = "+Vsync" ]] ; then
     v_sync_polarity=1
 else 
     v_sync_polarity=0
 fi
 echo -n "."
-v_front_porch=$(${modelinecmd} | grep "V ODD FRONT" | cut -f14 -d " " | cut -f1 -d ".")
+v_front_porch=$(awk '/V ODD FRONT PORCH/ { print $7 }' $mlfile | cut -f1 -d ".")
 echo -n "."
-v_sync_pulse=$(${modelinecmd} | grep "V SYNC" | cut -f27 -d " " | cut -f1 -d ".")
+v_sync_pulse=$(awk '/V SYNC/ { print $5 }' $mlfile | cut -f1 -d ".")
 echo -n "."
-v_back_porch=$(${modelinecmd} | grep "V BACK" | cut -f25 -d " " | cut -f1 -d ".")
+v_back_porch=$(awk '/V BACK PORCH/ { print $6 }' $mlfile | cut -f1 -d ".")
 echo -n "."
 v_sync_offset_a=0
 v_sync_offset_b=0
@@ -333,17 +343,17 @@ echo -n "."
 frame_rate_s2=$(bc <<< "scale=2; $screenrefresh/1")
 echo -n "."
 # calculated by GTF
-frame_rate_calc=$(${modelinecmd} | grep "V FRAME RATE" | cut -f23 -d " ")
-if [[ $frame_rate_calc = "" ]] ; then
-    frame_rate_calc=$(${modelinecmd} | grep "V FRAME RATE" | cut -f24 -d " ")
-fi
+frame_rate_calc=$(awk '/V FRAME RATE/ { print $6 }' $mlfile)
+# if [[ $frame_rate_calc = "" ]] ; then
+    # frame_rate_calc=$(${modelinecmd} | grep "V FRAME RATE" | cut -f24 -d " ")
+# fi
 echo -n "."
 # so what now? I chose calculated rounded... yet. To see... 
 frame_rate=$(bc <<< "scale=0; ($frame_rate_calc+0.5)/1")
 echo -n "."
 interlaced=0
 # pixel freq in Hz
-pixel_freq_mhz=$(${modelinecmd} | grep "Modeline" | cut -f6 -d " ") 
+pixel_freq_mhz=$(awk '/pclk/ { print $11 }' $mlfile) 
 pixel_freq=$(bc <<< "scale=0; ($pixel_freq_mhz*1000000)/1")
 echo "."
 aspect_ratio=1
@@ -403,5 +413,8 @@ else
 fi
 
 echo -e "\nALL Done."
+
+# cleanup
+#rm -f $mlfile
 
 exit 0
