@@ -7,9 +7,9 @@
 #og. author     :   Michael Vencio
 #ad. author     :   Sakitoshi
 #ad. author     :   ErantyInt
-#revision       :   CRTPi-cooper v0.5
+#revision       :   CRTPi-cooper v0.6
 #rev. author    :   jedcooper
-#rev. date      :   2021-03-12
+#rev. date      :   2021-03-13
 #notes          :   For advance users only and would need to be tweaked 
 #                   to cater to your needs and preference
 #                   resolution.ini (MAME 0.184) file needed http://www.progettosnaps.net/renameset/
@@ -21,8 +21,12 @@
 # ToDo:
 #
 # - Set refresh rate for PAL games in Game .cfg files (it helps fixing some audio issues)
-#
-#
+# - maybe a GLOBAL config file would be nice and convenient for most ports
+# - real refresh rates vs. silky smooth working refresh rates
+# - header
+# - documentation
+# 
+
 
 #### jedcooper runcommand debug log ####
 logdir=$HOME/runcmd_log
