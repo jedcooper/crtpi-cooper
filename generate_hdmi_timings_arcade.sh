@@ -11,6 +11,7 @@
 # - modelinecmd and cut must get another approach
 # - some 2048 modes are a bit too wide, but maybe it's my CRT setup? some intelligent aspect ratio management could be nice
 # - +1 Hz in NormalResolution? Paperboy f.e.
+# - Vertical Scanlines filter for vertical games? :-)
 #
 # Done (in testing):
 # - select resolutions near the usual resolutions from array (validHRES, validYRES)

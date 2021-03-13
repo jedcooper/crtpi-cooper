@@ -7,13 +7,22 @@
 #og. author     :   Michael Vencio
 #ad. author     :   Sakitoshi
 #ad. author     :   ErantyInt
-#revision       :   CRTPi-cooper v0.1
+#revision       :   CRTPi-cooper v0.5
 #rev. author    :   jedcooper
-#rev. date      :   2021-02-22
+#rev. date      :   2021-03-12
 #notes          :   For advance users only and would need to be tweaked 
 #                   to cater to your needs and preference
 #                   resolution.ini (MAME 0.184) file needed http://www.progettosnaps.net/renameset/
+#
+#                   *** THIS HEADER IS CURRENTLY OUT OF DATE! WILL CHANGE IN THE NEXT FEW RELEASES! ***
+#
 #=====================================================================================================================================
+
+# ToDo:
+#
+# - Set refresh rate for PAL games in Game .cfg files (it helps fixing some audio issues)
+#
+#
 
 #### jedcooper runcommand debug log ####
 logdir=$HOME/runcmd_log
@@ -28,6 +37,26 @@ echo -e "***\n*** START of logfile: ${curtime} - ${debugdt} - ${logfile} ***\n**
 # PAL variables
 ISPAL=false
 IS240p=false
+
+# Refresh rates
+# Source: https://emulation.gametechwiki.com/index.php/Resolution
+#
+
+NESPALrefresh=50.006978908189
+NESNTSCrefresh=60.098813897441
+SNESPALrefresh=50.006978908189
+SNESNTSCrefresh=60.098813897441
+A2600PALrefresh=49.860759671615
+A2600NTSCrefresh=59.922751013551
+SMSPALrefresh=49.701460119948
+SMSNTSCrefresh=59.922751013551
+SGENPALrefresh=49.701460119948
+SGENNTSCrefresh=59.922751013551
+PSXPALrefresh=50.00028192997
+PSXNTSCrefresh=59.940060138702
+GBArefresh=59.727500569606
+GBrefresh=59.727500569606
+GBCrefresh=59.727500569606
 
 # Emulator LUT
 emulatorLUT="/opt/retropie/configs/all/emulator_lut.txt"
@@ -116,7 +145,7 @@ fi > /dev/null
 if [ -f "/opt/retropie/configs/$1/PAL.txt" ]; then 
     PALGame=$(tr -d "\r" < "/opt/retropie/configs/$1/PAL.txt" | sed -e 's/\[/\\\[/');
     curtime=$(cat /proc/uptime | cut -f1 -d " ")
-    echo -e "${curtime}: PAL.txt found!" >> $logfile
+    echo -e "${curtime}: PAL.txt found for System: ${system}" >> $logfile
     # is game on list (or all) then set PAL = true 
     # Working: if { echo "$3" | grep -q -wi "$PALGame"; } then > /dev/null 
     if { echo "$3" | grep -q -wi "$PALGame" || echo "$PALGame" | grep -q -xi "all"; } then > /dev/null
@@ -137,7 +166,7 @@ if [ -f "/opt/retropie/configs/$1/PAL.txt" ]; then
         optkey=$(cat ${emulatorLUT} | grep ${emul} | cut -f3 -d ",")
         # get the desired PAL value from LUT
         optvalue=$(cat ${emulatorLUT} | grep ${emul} | cut -f4 -d ",")
-        if [ ${optkey} != "" ] ; then
+        if [[ ${optkey} != "" ]] ; then
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
             if [ -f "${optfile}" ] ; then > /dev/null
                 curtime=$(cat /proc/uptime | cut -f1 -d " ")
@@ -378,7 +407,6 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
         [[ "$system" == "ngpc" ]] || 
         [[ "$system" == "gb" ]] || 
         [[ "$system" == "gbc" ]] || 
-        [[ "$system" == "gba" ]] || 
         [[ "$system" == "psp" ]] ||         
         [[ "$system" == "gamegear" ]] || 
         [[ "$system" == "virtualboy" ]] || 
@@ -386,12 +414,24 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
         [[ "$system" == "wonderswan" ]] || 
         [[ "$system" == "wonderswancolor" ]] ; then
             vcgencmd hdmi_timings 2048 1 160 202 320 240 1 3 5 14 0 0 0 120 0 85909090 1 > /dev/null #CRTPi 2048x240p Timing Adjusted
+            #vcgencmd hdmi_cvt 2048 240 119 1 0 0 0 > /dev/null
             tvservice -e "DMT 87" > /dev/null
             sleep 1 > /dev/null
             fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 2048 -yres 240 > /dev/null #24b depth
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
-            echo "${curtime}: NTSC 2048x240 (256x240) applied" >> $logfile
-            
+            echo "${curtime}: NTSC 2048x240 120Hz (256x240) applied" >> $logfile
+
+# change timings for 256x240 for GBA - jedcooper
+    elif
+        [[ "$system" == "gba" ]] ; then
+            #vcgencmd hdmi_timings 2048 1 160 202 320 240 1 3 5 14 0 0 0 120 0 85909090 1 > /dev/null #CRTPi 2048x240p Timing Adjusted
+            vcgencmd hdmi_cvt 2048 240 119 1 0 0 0 > /dev/null
+            tvservice -e "DMT 87" > /dev/null
+            sleep 1 > /dev/null
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 2048 -yres 240 > /dev/null #24b depth
+            curtime=$(cat /proc/uptime | cut -f1 -d " ")
+            echo "${curtime}: NTSC 2048x240 119Hz (256x240) applied (Game Boy advance)" >> $logfile
+       
 # change timings for 256x192 systems to 2048x192p
     elif        
         [[ "$system" == "sg-1000" ]] ; then
@@ -424,7 +464,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
             sleep 1 > /dev/null
             fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 240 > /dev/null #24b depth
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
-            echo "${curtime}: Neo Geo NTSC 1920x240 (384x264) applied" >> $logfile          
+            echo "${curtime}: Neo Geo NTSC 1920x240 118Hz (384x264) applied" >> $logfile          
             
 # change timings for 320x200 systems to 1920x200p
     elif 
@@ -437,24 +477,60 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
             echo "${curtime}: NTSC 1920x200 (320x200) applied" >> $logfile
             
-# change timings for 320x192 systems to 1920x192p
+# change timings for xxxxxxx systems to 1920x240p
+# 
     elif 
-        ## [[ "$system" == "atari5200" ]] || 
-        [[ "$system" == "atari800" ]] || 
         [[ "$system" == "amiga" ]] || 
         [[ "$system" == "zxspectrum" ]] ; then
-            vcgencmd hdmi_timings 1920 1 137 247 295 192 1 27 7 36 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x192p Timing Adjusted
+            #vcgencmd hdmi_timings 1920 1 137 247 295 192 1 27 7 36 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x192p Timing Adjusted
+            vcgencmd hdmi_cvt 1920 240 119 1 0 0 0 > /dev/null
             tvservice -e "DMT 87" > /dev/null
             sleep 1 > /dev/null
-            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 192 > /dev/null #24b depth
+            #fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 192 > /dev/null #24b depth
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 240 > /dev/null #24b depth
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
-            echo "${curtime}: NTSC 1920x192 (320x192) applied" >> $logfile
+            echo "${curtime}: NTSC 1920x240 119Hz (320x240) applied" >> $logfile
+
+# custom Atari 800XL section (NTSC) - jedcooper
+# libretro Atari 800XL needs 119 Hz for NTSC!
+#
+# ToDo: .opt file change/creation for 800XL system
+#
+    elif 
+        [[ "$system" == "atari800" ]] ; then
+            #vcgencmd hdmi_timings 1920 1 137 247 295 192 1 27 7 36 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x192p Timing Adjusted
+            # quick fix for ambiguous Atari 5200 / 800XL Machine configuration
+            cp "/opt/retropie/configs/atari800/lr-atari800.cfg.800XL" "/opt/retropie/configs/atari800/lr-atari800.cfg"
+            vcgencmd hdmi_cvt 1920 240 119 1 0 0 0 > /dev/null 
+            tvservice -e "DMT 87" > /dev/null
+            sleep 1 > /dev/null
+            #fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 192 > /dev/null #24b depth
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 240 > /dev/null #24b depth
+            curtime=$(cat /proc/uptime | cut -f1 -d " ")
+            echo "${curtime}: NTSC 1920x240 119Hz (320x240) applied (Atari 800XL)" >> $logfile
             
+# custom Atari 5200 section (NTSC) - jedcooper
+# libretro Atari 5200 needs 119 Hz for NTSC!
+#
+# ToDo: .opt file change/creation for 5200 system
+#
+    elif 
+        [[ "$system" == "atari5200" ]] ; then
+            #vcgencmd hdmi_timings 1920 1 137 247 295 192 1 27 7 36 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x192p Timing Adjusted
+            # quick fix for ambiguous Atari 5200 / 800XL Machine configuration
+            cp "/opt/retropie/configs/atari800/lr-atari800.cfg.5200" "/opt/retropie/configs/atari800/lr-atari800.cfg"
+            vcgencmd hdmi_cvt 1920 240 119 1 0 0 0 > /dev/null
+            tvservice -e "DMT 87" > /dev/null
+            sleep 1 > /dev/null
+            #fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 192 > /dev/null #24b depth
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1920 -yres 240 > /dev/null #24b depth
+            curtime=$(cat /proc/uptime | cut -f1 -d " ")
+            echo "${curtime}: NTSC 1920x240 119Hz (320x240) applied (Atari 5200)" >> $logfile
+
 # change timings for 320x240 systems to 1920x240p
     elif 
         [[ "$system" == "psx" ]] || 
         [[ "$system" == "atari2600" ]] || 
-        [[ "$system" == "atari5200" ]] || 
         [[ "$system" == "dreamcast" ]] || 
         [[ "$system" == "saturn" ]] || 
         [[ "$system" == "atari7800" ]] || 
@@ -469,10 +545,10 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
             echo "${curtime}: NTSC 1920x240 (320x240) applied" >> $logfile
 
-# change timings for C64 NTSC to 1600x240p 50 Hz - jedcooper 
+# change timings for C64 NTSC to 1600x240p 60 Hz - jedcooper 
     elif 
         [[ "$system" == "c64" ]] ; then
-            vcgencmd hdmi_cvt 1600 240 120 1 0 0 0 > /dev/null
+            vcgencmd hdmi_cvt 1600 240 121 1 0 0 0 > /dev/null
             tvservice -e "DMT 87" > /dev/null
             sleep 1 > /dev/null
             fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 240 > /dev/null #24b depth
@@ -487,10 +563,15 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
 # hardcoded to 59.94 Hz ...
 # DAMNIT
 #
+# -
+#
+# FIXED for the MOST of the ROMs in just using currently CVT and add 1 Hz of vert. refresh
+# more detailed description may follow (or not)
+#
 # ToDo:
-# - writing/changing emulator resolution to .cfg file. In case of lr-mame2003-plus they're in: 
-#   ~/RetroPie/roms/arcade/MAME 2003-Plus/<rom>.cfg
-# - write also refreshrate? Not sure! As the audio crackling issue still exists
+# x writing/changing emulator resolution to .cfg file. In case of lr-mame2003-plus they're in: 
+#   ~/RetroPie/roms/arcade/MAME 2003-Plus/<rom>.cfg (done.)
+# x write also refreshrate? Not sure! As the audio crackling issue still exists (done.)
 # 
 
     elif 
@@ -523,6 +604,18 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
                 curtime=$(cat /proc/uptime | cut -f1 -d " ")
                 echo "${curtime}: *** END OF ARCADE ***" >> $logfile
 
+# Game & Watch - jedcooper
+
+    elif
+        [[ "$system" == "gameandwatch" ]] ; then
+        vcgencmd hdmi_cvt 1280 960 60 1 0 0 0 > /dev/null
+        tvservice -e "DMT 87" > /dev/null
+        sleep 1 > /dev/null
+        fbset -depth 8 && fbset -depth 16 -xres 1280 -yres 960 > /dev/null #VGA666 16b depth
+        tvservice -s > /dev/null
+        curtime=$(cat /proc/uptime | cut -f1 -d " ")
+        echo "${curtime}: 1280x960 applied (libretro Game & Watch)" >> $logfile
+
 # change timings for for Kodi to 1280x720p
     elif
         [[ "$system" == "kodi" ]] ||
@@ -543,7 +636,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == false ]] ; then
         fbset -depth 8 && fbset -depth 16 -xres 1600 -yres 240 > /dev/null #VGA666 16b depth
         tvservice -s > /dev/null
         curtime=$(cat /proc/uptime | cut -f1 -d " ")
-        echo "${curtime}: NTSC 1600x240 (320x240) applied (DEFAULT)" >> $logfile
+        echo "${curtime}: NTSC 1600x240 (320x240) applied (non-libretro DEFAULT)" >> $logfile
 
     fi
 
@@ -567,7 +660,8 @@ elif [[ "${ISPAL}" == false ]] &&
 elif [[ "${ISPAL}" == false ]] &&
 # C64 PAL Screenmode NON-libretro! - jedcooper
     [[ "$system" == "c64" ]] ; then
-    vcgencmd hdmi_cvt 1600 240 100 1 0 0 0 > /dev/null
+    # also here 101 Hz for slightly more CRT REAL refresh, this is for PAL C64, and yes it's in the NTSC section, this is intended so far, til I change the handling for non-libretro C64 emulator(s)
+    vcgencmd hdmi_cvt 1600 240 101 1 0 0 0 > /dev/null
     tvservice -e "DMT 87" > /dev/null
     sleep 1 > /dev/null
     fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 240 > /dev/null #24b depth
@@ -617,7 +711,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
         curtime=$(cat /proc/uptime | cut -f1 -d " ")
         echo "${curtime}: PAL 320.txt 1920x256 (320x256) applied" >> $logfile
 
-# change timings for 256x240 systems to 2048x240p (PAL)
+# change timings for 256x240 systems to 2048x240p (PAL) - jedcooper
     elif 
         [[ "$system" == "snes" ]] || 
         [[ "$system" == "nes" ]] || 
@@ -628,7 +722,7 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
             sleep 1 > /dev/null
             fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 2048 -yres 240 > /dev/null #24b depth
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
-            echo "${curtime}: PAL 2048x240 (256x240) applied" >> $logfile
+            echo "${curtime}: PAL 2048x240 100Hz (256x240) applied" >> $logfile
             
 # change timings for 256x240 systems to 2048x240p (PAL)
     elif 
@@ -681,11 +775,10 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
             echo "${curtime}: NTSC 1920x200 (320x200) applied" >> $logfile
             
-# change timings for 320x192 systems to 1920x192p
+# change timings for 320x192 systems to 1920x192p (PAL)
     elif 
-        ## [[ "$system" == "atari5200" ]] || 
         [[ "$system" == "atari800" ]] || 
-        [[ "$system" == "amiga" ]] || 
+        #[[ "$system" == "amiga" ]] || 
         [[ "$system" == "zxspectrum" ]] ; then
             #vcgencmd hdmi_timings 1920 1 137 247 295 192 1 27 7 36 0 0 0 120 0 81720000 1 > /dev/null #CRTPi 1920x192p Timing Adjusted
             vcgencmd hdmi_cvt 1920 224 100 1 0 0 0 > /dev/null
@@ -715,16 +808,28 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
             echo "${curtime}: PAL 1920x240 (320x240) applied" >> $logfile
 
-# change timings for C64 PAL to 1600x240p 50 Hz - jedcooper
+# change timings for libretro C64 PAL to 1600x240p 50 Hz - jedcooper
     elif 
         [[ "$system" == "c64" ]] ; then
-            vcgencmd hdmi_cvt 1600 240 100 1 0 0 0 > /dev/null
+            # +1 Hz because of measured real refresh was bit too low on CRT, now it's 50.155 Hz with 101 in 1600x240 - PERFECT!
+            vcgencmd hdmi_cvt 1600 288 101 1 0 0 0 > /dev/null
             tvservice -e "DMT 87" > /dev/null
             sleep 1 > /dev/null
-            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 240 > /dev/null #24b depth
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 288 > /dev/null #24b depth
             curtime=$(cat /proc/uptime | cut -f1 -d " ")
-            echo "${curtime}: PAL 1600x240 (320x240) applied (C64 libretro)" >> $logfile
+            echo "${curtime}: PAL 1600x288 (384x288) applied (C64 libretro)" >> $logfile
 
+# change timings for libretro Amiga PAL to 1600x288p 50 Hz - jedcooper
+    elif
+        [[ "$system" == "amiga" ]] ; then
+            # Refresh rate testing, currently same as C64
+            vcgencmd hdmi_cvt 1600 288 101 1 0 0 0 > /dev/null
+            tvservice -e "DMT 87" > /dev/null
+            sleep 1 > /dev/null
+            fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 288 > /dev/null #24b depth
+            curtime=$(cat /proc/uptime | cut -f1 -d " ")
+            echo "${curtime}: PAL 1600x288 (720x288) applied (libretro Amiga)" >> $logfile
+            
 # change timings for Atari 7800 PAL to 1920x288 50 Hz - jedcooper
     elif
         [[ "$system" == "atari7800" ]] ; then
@@ -760,7 +865,21 @@ if [[ "$emul_lr" == "lr" ]] && [[ "${ISPAL}" == true ]] ; then
         echo "${curtime}: PAL 1600x240 (320x240) applied (DEFAULT)" >> $logfile
 
     fi
-    
+
+elif [[ "${ISPAL}" == true ]] &&
+    [[ "$system" == "amiga" ]] ; then
+        # Refresh rate testing, currently same as C64
+        vcgencmd hdmi_cvt 1600 288 101 1 0 0 0 > /dev/null
+        # for configuration I use 1024x768
+        # vcgencmd hdmi_cvt 1024 768 50 1 0 0 0 > /dev/null
+        tvservice -e "DMT 87" > /dev/null
+        sleep 1 > /dev/null
+        fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1600 -yres 288 > /dev/null #24b depth
+        # fbset -depth 8 && fbset -depth 16 && fbset -depth 24 -xres 1024 -yres 768 > /dev/null #24b depth
+        curtime=$(cat /proc/uptime | cut -f1 -d " ")
+        # echo "${curtime}: PAL 1600x288 (720x288) applied (non-libretro Amiga)" >> $logfile
+        echo "${curtime}: PAL 1024x768 applied (non-libretro Amiga)" >> $logfile   
+
 fi
 
 # RetroStats
